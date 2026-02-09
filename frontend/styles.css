@@ -1,0 +1,89 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    background: hsl(55, 79%, 54%);
+    margin: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+section {
+    background: hwb(239 8% 19%);
+    padding: 12px;
+    border: 1px solid hsl(134, 79%, 45%);
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.field {
+    margin-bottom: 12px;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    box-sizing: border-box;
+
+}
+
+.invalid {
+    border-color: #c00;
+}
+
+.error-text {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #c00;
+    min-height: 14px;
+}
+
+.buttons {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+th {
+    background: #eee;
+}
+
+.buttons {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    padding: 8px 12px;
+    border: 1px solid hsl(297, 74%, 46%);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
