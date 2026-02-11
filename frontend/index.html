@@ -3,75 +3,108 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мій застосунок (Лабораторна №1)</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>Лабораторна №1 — Заявка в техпідтримку</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
 </head>
 
 <body>
+
     <div class="container">
-        <header>
-            <h1>Мій застосунок (варіант N 9)</h1>
-        </header>
+        <h1>Мій застосунок "Відправка заяви в тех. підтримку" (Варіант №9)</h1>
 
-        <main>
-            <section id="create-section">
-                <form id="createForm">
+        <div class="layout">
+
+            <form id="createForm">
+                <h2 id="formTitle">Нова заявка</h2>
+
+                <div class="field">
+                    <label for="subjectInput">Предмет</label>
+                    <input id="subjectInput" type="text">
+                    <p class="error-text" id="subjectError"></p>
+                </div>
+
+                <div class="field">
+                    <label for="statusSelect">Статус</label>
+                    <select id="statusSelect">
+                        <option value="">Оберіть статус</option>
+                        <option value="Technical">Технічний</option>
+                        <option value="Physical">Фізичний</option>
+                        <option value="Undefined">Невизначено</option>
+                    </select>
+                    <p class="error-text" id="statusError"></p>
+                </div>
+
+                <div class="field">
+                    <label for="prioritySelect">Пріоритет</label>
+                    <select id="prioritySelect">
+                        <option value="">Оберіть пріоритет</option>
+                        <option value="Low">Нетермінове</option>
+                        <option value="Medium">Не критичне</option>
+                        <option value="High">Критичне</option>
+                    </select>
+                    <p class="error-text" id="priorityError"></p>
+                </div>
+
+                <div class="field">
+                    <label for="messageInput">Опис проблеми</label>
+                    <textarea id="messageInput" rows="4"></textarea>
+                    <p class="error-text" id="messageError"></p>
+                </div>
+
+                <div class="field">
+                    <label for="authorInput">Автор</label>
+                    <input id="authorInput" type="text">
+                    <p class="error-text" id="authorError"></p>
+                </div>
+
+                <div class="buttons">
+                    <button type="submit">Зберегти</button>
+                    <button type="button" id="cancelEdit" class="hidden">Скасувати</button>
+                </div>
+            </form>
+
+            <section>
+                <h2>Список заявок</h2>
+                <div class="filters">
                     <div class="field">
-                        <label for="field1Input">Поле 1</label>
-                        <input id="field1Input" type="text" />
-                        <p class="error-text" id="field1Error"></p>
-                    </div>
-                    <div class="field">
-                        <label for="field2Select">Поле 2</label>
-                        <select id="field2Select">
-                            <option value="">Оберіть значення</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
+                        <label for="filterStatus">Фільтр за статусом</label>
+                        <select id="filterStatus">
+                            <option value="">Усі</option>
+                            <option value="Technical">Технічний</option>
+                            <option value="Physical">Фізичний</option>
+                            <option value="Undefined">Невизначено</option>
                         </select>
-                        <p class="error-text" id="field2Error"></p>
                     </div>
-                    <div class="field">
-                        <label for="field3Text">Коментар</label>
-                        <textarea id="field3Text" rows="4"></textarea>
-                        <p class="error-text" id="field3Error"></p>
-                    </div>
-                    <div class="buttons">
-                        <button type="submit">Додати</button>
-                        <button type="button" id="resetBtn">Очистити</button>
-                    </div>
-                </form>
-            </section>
-            <section id="list-section">
 
-                <h2>Список записів</h2>
-                <table id="itemsTable">
+                    <div class="field">
+                        <label for="filterPriority">Фільтр за пріоритетом</label>
+                        <select id="filterPriority">
+                            <option value="">Усі</option>
+                            <option value="Low">Нетермінове</option>
+                            <option value="Medium">Не потребує швидкого реагування</option>
+                            <option value="High">Критичне</option>
+                        </select>
+                    </div>
+                </div>
+                <table>
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Назва</th>
-                            <th>Статус</th>
-                            <th>Дата</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Author</th>
                             <th>Дії</th>
                         </tr>
                     </thead>
-                    <tbody id="itemsTableBody">
-                        <!-- рядки даних додає JS -->
-                    </tbody>
+                    <tbody id="itemsTableBody"></tbody>
                 </table>
-
-                <div class="field">
-                    <label for="titleInput">Назва</label>
-                    <input id="titleInput" class="input" type="text" />
-                </div>
-
-                <button type="button" class="delete-btn" data-id="123">Видалити</button>
-                <button type="button" class="edit-btn" data-id="123">Редагувати</button>
-
             </section>
-        </main>
+
+        </div>
     </div>
+
 </body>
 
 </html>
