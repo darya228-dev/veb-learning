@@ -4,9 +4,12 @@
 
 body {
     font-family: 'Times New Roman', Times, serif;
-    background: hwb(138 12% 66% / 0.497);
     margin: 0;
     padding: 20px;
+    background-image: url("back.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
 }
 
 .container {
@@ -16,6 +19,7 @@ body {
 
 .layout {
     display: flex;
+    gap: 10px;
 }
 
 form,
@@ -25,6 +29,7 @@ section {
     border: 1px solid #ccc;
     border-radius: 5%;
     width: 50%;
+    gap: 10px;
 }
 
 .field {
@@ -38,6 +43,7 @@ label {
 .filters {
     display: flex;
     margin-bottom: 10px;
+    gap: 10px;
 }
 
 input,
@@ -58,11 +64,23 @@ textarea {
     min-height: 14px;
 }
 
-.buttons {
-    display: flex;
-    color: hsla(128, 48%, 65%, 0.277);
-    justify-content: center;
-    height: 30px;
+button {
+    border-radius: 50px;
+    border: 2px solid #2d6a31;
+    background-color: white;
+    padding: 5px 15px;
+    color: #2d6a31;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    display: block;
+    margin: 10px auto;
+}
+
+button:hover {
+    background-color: #2d6a31;
+    color: white;
+    transition: 0.3s;
 }
 
 .hidden {

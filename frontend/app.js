@@ -1,9 +1,9 @@
-/* Стата */
+// стата
 const STORAGE_KEY = "lr1_tickets";
 let items = loadFromStorage();
 let editingId = null;
 
-/* елементи */
+// елементі з дома
 const form = document.getElementById("createForm");
 const tableBody = document.getElementById("itemsTableBody");
 
@@ -18,13 +18,13 @@ const formTitle = document.getElementById("formTitle");
 
 const filterStatus = document.getElementById("filterStatus");
 const filterPriority = document.getElementById("filterPriority");
-
+//фільтрація
 filterStatus.addEventListener("change", renderTable);
 filterPriority.addEventListener("change", renderTable);
 
 
 form.addEventListener("submit", (e) => {
-    e.preventDefault();
+    e.preventDefault(); //не релоуд
 
     const dto = readForm();
     if (!validate(dto)) return;
@@ -127,7 +127,16 @@ function validate(dto) {
     if (!dto.priority) showError("prioritySelect", "priorityError", "Оберіть пріоритет"), valid = false;
     if (dto.message.length < 5) showError("messageInput", "messageError", "Мінімум 5 символів"), valid = false;
     if (!dto.author) showError("authorInput", "authorError", "Вкажіть автора"), valid = false;
+    const duplicate = items.find(item =>
+        item.subject.toLowerCase() === dto.subject.toLowerCase() &&
+        item.author.toLowerCase() === dto.author.toLowerCase() &&
+        item.id !== editingId
+    );
 
+    if (duplicate) {
+        showError("subjectInput", "subjectError", "Така заявка вже існує");
+        valid = false;
+    }
     return valid;
 }
 

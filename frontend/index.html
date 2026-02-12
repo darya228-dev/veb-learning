@@ -6,6 +6,7 @@
     <title>Лабораторна №1 — Заявка в техпідтримку</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
+    <link rel="icon" href="Gunbab.jpg" type="image/x-icon" />
 </head>
 
 <body>
@@ -19,7 +20,7 @@
                 <h2 id="formTitle">Нова заявка</h2>
 
                 <div class="field">
-                    <label for="subjectInput">Предмет</label>
+                    <label for="subjectInput">Вкажіть тип предмету</label>
                     <input id="subjectInput" type="text">
                     <p class="error-text" id="subjectError"></p>
                 </div>
@@ -47,13 +48,13 @@
                 </div>
 
                 <div class="field">
-                    <label for="messageInput">Опис проблеми</label>
+                    <label for="messageInput">Опишіть проблему</label>
                     <textarea id="messageInput" rows="4"></textarea>
                     <p class="error-text" id="messageError"></p>
                 </div>
 
                 <div class="field">
-                    <label for="authorInput">Автор</label>
+                    <label for="authorInput">Введіть ім'я</label>
                     <input id="authorInput" type="text">
                     <p class="error-text" id="authorError"></p>
                 </div>
@@ -81,7 +82,7 @@
                         <label for="filterPriority">Фільтр за пріоритетом</label>
                         <select id="filterPriority">
                             <option value="">Усі</option>
-                            <option value="Low">Нетермінове</option>
+                            <option value="Нетермінове">Нетермінове</option>
                             <option value="Medium">Не потребує швидкого реагування</option>
                             <option value="High">Критичне</option>
                         </select>
@@ -91,10 +92,10 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Subject</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Author</th>
+                            <th>Предмет</th>
+                            <th>Статус</th>
+                            <th>Пріоритет</th>
+                            <th>Ім'я клієнта</th>
                             <th>Дії</th>
                         </tr>
                     </thead>
