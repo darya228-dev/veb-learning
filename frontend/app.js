@@ -1,46 +1,39 @@
-// стата
-
-const STORAGE_KEY = "lr1_tickets";
+const API_URL = "http://localhost:3000/api/v1/tasks";
 
 const state = {
-    items: loadFromStorage(),
+    items: [], // Тепер завантажуємо з сервера
     editingId: null,
     filters: {
         status: "",
-        priority: ""
-    }
+        priority: "",
+        sort: null
+    },
+    sort: { field: null, direction: "asc" }
 };
 
-// дом
-
+// DOM елементи (залишаються без змін)
 const form = document.getElementById("createForm");
 const tableBody = document.getElementById("itemsTableBody");
-
 const subjectInput = document.getElementById("subjectInput");
 const statusSelect = document.getElementById("statusSelect");
 const prioritySelect = document.getElementById("prioritySelect");
 const messageInput = document.getElementById("messageInput");
 const authorInput = document.getElementById("authorInput");
-
 const cancelEditBtn = document.getElementById("cancelEdit");
 const formTitle = document.getElementById("formTitle");
-
 const filterStatus = document.getElementById("filterStatus");
 const filterPriority = document.getElementById("filterPriority");
+const tableHead = document.querySelector("thead");
 
-// инит
-
-(function init() {
+// Точка входу
+(async function init() {
     attachHandlers();
+    await loadFromServer(); // Замість localStorage
     render();
 })();
 
-// хандрелс
-
 function attachHandlers() {
-
     form.addEventListener("submit", onSubmit);
-
     tableBody.addEventListener("click", onTableClick);
 
     filterStatus.addEventListener("change", (e) => {
@@ -54,78 +47,104 @@ function attachHandlers() {
     });
 
     cancelEditBtn.addEventListener("click", resetForm);
-}
 
-function onSubmit(e) {
-    e.preventDefault();
+    tableHead.addEventListener("click", function (e) {
+        const col = e.target.dataset.sort;
+        if (!col) return;
 
-    const dto = readForm();
-    if (!validate(dto)) return;
-
-    if (state.editingId) {
-        updateItem(dto);
-    } else {
-        addItem(dto);
-    }
-
-    saveToStorage();
-    resetForm();
-    render();
-}
-
-function onTableClick(e) {
-    if (e.target.dataset.delete) {
-        deleteItem(Number(e.target.dataset.delete));
-        saveToStorage();
+        if (state.filters.sort === col) {
+            state.sort.direction = state.sort.direction === "asc" ? "desc" : "asc";
+        } else {
+            state.filters.sort = col;
+            state.sort.direction = "asc";
+        }
         render();
-    }
-
-    if (e.target.dataset.edit) {
-        startEdit(Number(e.target.dataset.edit));
-    }
-}
-
-// круд
-
-function addItem(dto) {
-    state.items.push({
-        id: Date.now(),
-        createdAt: new Date().toLocaleDateString(),
-        ...dto
     });
 }
 
-function updateItem(dto) {
-    state.items = state.items.map(item =>
-        item.id === state.editingId ? { ...item, ...dto } : item
-    );
+// Взаємодія з API
+async function loadFromServer() {
+    try {
+        const response = await fetch(API_URL);
+        state.items = await response.json();
+        render(); // Не забудь викликати функцію малювання таблиці після завантаження
+    } catch (err) {
+        console.error("Помилка завантаження:", err);
+    }
 }
 
-function deleteItem(id) {
-    state.items = state.items.filter(item => item.id !== id);
+async function onSubmit(e) {
+    e.preventDefault();
+    const dto = readForm();
+    if (!validate(dto)) return;
+
+    try {
+        if (state.editingId) {
+            // PUT запит для оновлення
+            const response = await fetch(`${API_URL}/${state.editingId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dto)
+            });
+            const updated = await response.json();
+            state.items = state.items.map(item => item.id === state.editingId ? updated : item);
+        } else {
+            // POST запит для створення
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dto)
+            });
+            const newItem = await response.json();
+            state.items.push(newItem);
+        }
+
+        resetForm();
+        render();
+    } catch (err) {
+        alert("Помилка при збереженні даних");
+    }
 }
 
-// рендер
+async function onTableClick(e) {
+    const deleteId = e.target.dataset.delete;
+    const editId = e.target.dataset.edit;
 
+    if (deleteId) {
+        try {
+            await fetch(`${API_URL}/${deleteId}`, { method: "DELETE" });
+            state.items = state.items.filter(item => item.id !== deleteId);
+            render();
+        } catch (err) {
+            console.error("Не вдалося видалити:", err);
+        }
+    }
+
+    if (editId) {
+        startEdit(editId);
+    }
+}
+
+// Функції рендеру та логіки (залишаються майже такими самими)
 function render() {
-    renderTable();
-}
-
-function renderTable() {
     tableBody.innerHTML = "";
-
     let filteredItems = [...state.items];
 
     if (state.filters.status) {
-        filteredItems = filteredItems.filter(
-            item => item.status === state.filters.status
-        );
+        filteredItems = filteredItems.filter(item => item.status === state.filters.status);
+    }
+    if (state.filters.priority) {
+        filteredItems = filteredItems.filter(item => item.priority === state.filters.priority);
     }
 
-    if (state.filters.priority) {
-        filteredItems = filteredItems.filter(
-            item => item.priority === state.filters.priority
-        );
+    // Сортування
+    if (state.filters.sort) {
+        const dir = state.sort.direction === "asc" ? 1 : -1;
+        filteredItems.sort((a, b) => {
+            const valA = a[state.filters.sort] || "";
+            const valB = b[state.filters.sort] || "";
+            return valA.toString().localeCompare(valB.toString()) * dir;
+        });
     }
 
     filteredItems.forEach((item, index) => {
@@ -145,8 +164,6 @@ function renderTable() {
     });
 }
 
-// форма
-
 function readForm() {
     return {
         subject: subjectInput.value.trim(),
@@ -160,15 +177,12 @@ function readForm() {
 function startEdit(id) {
     const item = state.items.find(x => x.id === id);
     if (!item) return;
-
     state.editingId = id;
-
     subjectInput.value = item.subject;
     statusSelect.value = item.status;
     prioritySelect.value = item.priority;
     messageInput.value = item.message;
     authorInput.value = item.author;
-
     formTitle.textContent = "Редагування заявки";
     cancelEditBtn.classList.remove("hidden");
 }
@@ -181,29 +195,14 @@ function resetForm() {
     cancelEditBtn.classList.add("hidden");
 }
 
-// перевірка
-
 function validate(dto) {
     clearErrors();
     let valid = true;
-
     if (!dto.subject) showError("subjectInput", "subjectError", "Обовʼязкове поле"), valid = false;
     if (!dto.status) showError("statusSelect", "statusError", "Оберіть статус"), valid = false;
     if (!dto.priority) showError("prioritySelect", "priorityError", "Оберіть пріоритет"), valid = false;
     if (dto.message.length < 5) showError("messageInput", "messageError", "Мінімум 5 символів"), valid = false;
     if (!dto.author) showError("authorInput", "authorError", "Вкажіть автора"), valid = false;
-
-    const duplicate = state.items.find(item =>
-        item.subject.toLowerCase() === dto.subject.toLowerCase() &&
-        item.author.toLowerCase() === dto.author.toLowerCase() &&
-        item.id !== state.editingId
-    );
-
-    if (duplicate) {
-        showError("subjectInput", "subjectError", "Така заявка вже існує");
-        valid = false;
-    }
-
     return valid;
 }
 
@@ -215,15 +214,4 @@ function showError(inputId, errorId, message) {
 function clearErrors() {
     document.querySelectorAll(".invalid").forEach(e => e.classList.remove("invalid"));
     document.querySelectorAll(".error-text").forEach(e => e.textContent = "");
-}
-
-// сейв в масив
-
-function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
-}
-
-function loadFromStorage() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
 }
