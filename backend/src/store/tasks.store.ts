@@ -1,4 +1,4 @@
-import { Task, CreateTaskDto } from "../domain/task.dto";
+import { Task, CreateTaskDto, UpdateTaskDto } from "../domain/task.dto";
 
 let tasks: Task[] = [];
 
@@ -18,12 +18,14 @@ export const add = (task: CreateTaskDto): Task => {
   return newTask;
 };
 
-export const update = (id: string, data: Partial<Task>): Task | null => {
-  const task = tasks.find(t => t.id === id);
-  if (!task) return null;
+export const update = (id: string, data: UpdateTaskDto): Task | null => {
+  const index = tasks.findIndex(t => t.id === id);
+  if (index === -1) return null;
 
-  Object.assign(task, data);
-  return task;
+  const updatedTask: Task = { id, ...data };
+  tasks[index] = updatedTask;
+
+  return updatedTask;
 };
 
 export const remove = (id: string): void => {

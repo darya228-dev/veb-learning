@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-// Универсальный wrap для любых параметров
+
 export default function wrap<
   P = {},
   ResBody = any,

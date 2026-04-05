@@ -6,8 +6,17 @@ interface TaskParams {
 }
 
 export const getAll = async (req: Request, res: Response) => {
-  const tasks = service.getAll(req.query);
-  res.json(tasks);
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  console.log('page', page, 'limit', limit, 'status', req.query.status);
+  const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const result = service.getAll({
+    page,
+    limit,
+    status,
+  });
+  return res.json(result);
 };
 
 export const getById = async (req: Request<TaskParams>, res: Response) => {
@@ -15,7 +24,12 @@ export const getById = async (req: Request<TaskParams>, res: Response) => {
   res.json(task);
 };
 
+// export const create = async (req: Request, res: Response) => {
+//   const task = service.create(req.body);
+//   res.status(201).json(task);
+// };
 export const create = async (req: Request, res: Response) => {
+  console.log("BODY RAW:", req.body);
   const task = service.create(req.body);
   res.status(201).json(task);
 };
