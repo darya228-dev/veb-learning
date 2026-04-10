@@ -24,12 +24,7 @@ export const getById = async (req: Request<TaskParams>, res: Response) => {
   res.json(task);
 };
 
-// export const create = async (req: Request, res: Response) => {
-//   const task = service.create(req.body);
-//   res.status(201).json(task);
-// };
 export const create = async (req: Request, res: Response) => {
-  console.log("BODY RAW:", req.body);
   const task = service.create(req.body);
   res.status(201).json(task);
 };
@@ -42,4 +37,9 @@ export const update = async (req: Request<TaskParams>, res: Response) => {
 export const remove = async (req: Request<TaskParams>, res: Response) => {
   service.remove(req.params.id);
   res.status(204).send();
+};
+
+export const getStats = async (req: Request, res: Response) => {
+  const result = service.getStats();
+  res.json(result);
 };
