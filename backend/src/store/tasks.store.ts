@@ -1,33 +1,67 @@
+import { db } from "../infrastructure/db";
 import { Task, CreateTaskDto, UpdateTaskDto } from "../domain/task.dto";
 
-let tasks: Task[] = [];
-
-export const getAll = (): Task[] => tasks;
-
-export const getById = (id: string): Task | undefined => {
-  return tasks.find(t => t.id === id);
+export const getAll = (): Promise<Task[]> => {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM tasks", (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Task[]);
+    });
+  });
 };
 
-export const add = (task: CreateTaskDto): Task => {
-  const newTask: Task = {
-    ...task,
-    id: Date.now().toString()
-  };
-
-  tasks.push(newTask);
-  return newTask;
+export const getById = (id: string): Promise<Task | undefined> => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM tasks WHERE id='${id}'`, (err, row) => {
+      if (err) reject(err);
+      else resolve(row as Task);
+    });
+  });
 };
 
-export const update = (id: string, data: UpdateTaskDto): Task | null => {
-  const index = tasks.findIndex(t => t.id === id);
-  if (index === -1) return null;
+export const add = (task: CreateTaskDto): Promise<Task> => {
+  const id = Date.now().toString();
 
-  const updatedTask: Task = { id, ...data };
-  tasks[index] = updatedTask;
-
-  return updatedTask;
+  return new Promise((resolve, reject) => {
+    db.run(`
+      INSERT INTO tasks (id, subject, status, priority, message, author)
+      VALUES ('${id}', '${task.subject}', '${task.status}', '${task.priority}', '${task.message}', '${task.author}')
+    `, (err) => {
+      if (err) reject(err);
+      else resolve({ ...task, id });
+    });
+  });
 };
 
-export const remove = (id: string): void => {
-  tasks = tasks.filter(t => t.id !== id);
+export const remove = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(`DELETE FROM tasks WHERE id='${id}'`, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+};
+
+export const update = (id: string, data: UpdateTaskDto): Promise<Task | null> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE tasks 
+       SET subject='${data.subject}', 
+           status='${data.status}', 
+           priority='${data.priority}', 
+           message='${data.message}', 
+           author='${data.author}'
+       WHERE id='${id}'`,
+      function (err) {
+        if (err) reject(err);
+        else {
+          if (this.changes === 0) {
+            resolve(null);
+          } else {
+            resolve({ id, ...data });
+          }
+        }
+      }
+    );
+  });
 };
