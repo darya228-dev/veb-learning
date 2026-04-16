@@ -1,72 +1,145 @@
-Backend
+# Backend API (TypeScript + SQLite)
 
-Цей проект реалізує REST API для наскрізного проекту на TypeScript без використання бази даних. Дані зберігаються в пам’яті, а сервер обробляє HTTP-запити, повертаючи JSON.
+## Опис проєкту
 
-Можливості
+Проєкт реалізує REST API на Node.js та TypeScript з використанням SQLite як реляційної бази даних.
 
-CRUD-операції для сутностей проекту
-GET /api/tasks – отримати всі завдання
-GET /api/tasks/:id – отримати завдання за ID
-POST /api/tasks – створити нове завдання
-PUT /api/tasks/:id – оновити завдання
-DELETE /api/tasks/:id – видалити завдання
-Контроль статус-кодів HTTP (200, 201, 204, 400, 404, 500)
-Використання DTO для запитів і відповідей
-Базова валідація даних
-Централізована обробка помилок
-Мінімальне логування HTTP-запитів
+Система підтримує:
+- CRUD операції для сутностей tasks, users, projects
+- зв’язки між таблицями (1:N)
+- агрегаційні запити
+- JOIN запити
+- базову валідацію та обробку помилок
+- централізовану роботу з базою даних через окремий data-access шар
 
-Технології
+---
 
-Node.js
-TypeScript
-Express
-npm (залежності та скрипти)
+## Схема бази даних
 
-Структура проекту
+### users
+- id (TEXT, PRIMARY KEY)
+- name (TEXT, NOT NULL)
 
-backend/
-├── node_modules/
-├── src/
-│   ├── controllers/
-│   │   ├── health.controller.ts
-│   │   ├── projects.controller.ts
-│   │   └── tasks.controller.ts
-│   ├── domain/
-│   │   └── task.dto.ts
-│   ├── infrastructure/
-│   │   ├── apiError.ts
-│   │   ├── errorMiddleware.ts
-│   │   ├── validation.ts
-│   │   └── wrap.ts
-│   ├── routes/
-│   │   ├── health.routes.ts
-│   │   ├── projects.routes.ts
-│   │   └── tasks.routes.ts
-│   ├── services/
-│   │   ├── health.service.ts
-│   │   └── tasks.service.ts
-│   ├── store/
-│   │   └── tasks.store.ts
-│   ├── app.ts
-│   └── server.ts
-├── package-lock.json
-├── package.json
-└── tsconfig.json
+### projects
+- id (TEXT, PRIMARY KEY)
+- name (TEXT, NOT NULL)
 
-Встановлення та запуск
+### tasks
+- id (TEXT, PRIMARY KEY)
+- subject (TEXT, NOT NULL)
+- status (TEXT, CHECK: Technical | Physical | Undefined)
+- priority (TEXT, CHECK: Low | Medium | High)
+- message (TEXT)
+- author (TEXT)
+- userId (TEXT, FOREIGN KEY → users.id, ON DELETE SET NULL)
+- projectId (TEXT, FOREIGN KEY → projects.id, ON DELETE CASCADE)
 
-Встановіть залежності:
+---
 
+## Зв’язки між таблицями
+
+- users → tasks (1:N)
+- projects → tasks (1:N)
+
+---
+
+## Встановлення та запуск
+
+### Встановлення залежностей
 npm install
 
-Запуск у режимі розробки:
-
+### Запуск у режимі розробки
 npm run dev
 
-Запуск зібраного проекту:
+Сервер запускається за адресою:
+http://localhost:3000
 
-npm run build
-npm start
+---
 
-Сервер запускається на http://localhost:3000.
+## Ініціалізація бази даних
+
+База даних створюється автоматично при старті застосунку.
+
+- схема: src/infrastructure/schema.sql
+- ініціалізація: initDb.ts
+- наповнення тестовими даними: seed.ts
+
+---
+
+## API endpoints
+
+### tasks
+GET /api/v1/tasks
+GET /api/v1/tasks/:id
+POST /api/v1/tasks
+PUT /api/v1/tasks/:id
+DELETE /api/v1/tasks/:id
+
+### додаткові endpoints
+GET /api/v1/tasks/stats
+GET /api/v1/tasks/with-users
+
+---
+
+## Приклад агрегації (COUNT)
+
+GET /api/v1/tasks/stats
+
+Відповідь:
+[
+  { "status": "Technical", "count": 3 },
+  { "status": "Physical", "count": 2 }
+]
+
+---
+
+## Приклад JOIN запиту
+
+GET /api/v1/tasks/with-users
+
+Відповідь містить задачі разом з ім’ям користувача.
+
+---
+
+## Демонстрація SQL injection (навчальна частина)
+
+У проєкті присутній приклад небезпечного SQL формування через конкатенацію рядків:
+
+db.all("SELECT * FROM tasks WHERE status='" + status + "'")
+
+Це дозволяє SQL injection через параметри запиту.
+
+Приклад шкідливого вводу:
+status = 'Technical' OR 1=1
+
+---
+
+## Міграції
+
+У проєкті використовується спрощена система міграцій.
+
+- директорія: src/infrastructure/migrations
+- таблиця контролю: schema_migrations
+- при старті застосовуються тільки нові міграції
+
+---
+
+## Технології
+
+- Node.js
+- TypeScript
+- Express
+- SQLite3
+
+---
+
+## Особливості реалізації
+
+- централізований доступ до бази даних
+- DTO для вхідних даних
+- validation layer
+- middleware для помилок
+- JOIN запити
+- агрегаційні запити
+- seed даних
+- підтримка foreign keys

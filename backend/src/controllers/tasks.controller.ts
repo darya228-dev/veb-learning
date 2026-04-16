@@ -6,40 +6,39 @@ interface TaskParams {
 }
 
 export const getAll = async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  console.log("GET ALL HIT");
 
-  console.log('page', page, 'limit', limit, 'status', req.query.status);
-  const status = typeof req.query.status === "string" ? req.query.status : undefined;
-  const result = service.getAll({
-    page,
-    limit,
-    status,
+  const result = await service.getAll({
+    page: 1,
+    limit: 10,
   });
-  return res.json(result);
+
+  console.log("RESULT:", result);
+
+  res.json(result);
 };
 
 export const getById = async (req: Request<TaskParams>, res: Response) => {
-  const task = service.getById(req.params.id);
+  const task = await service.getById(req.params.id);
   res.json(task);
 };
 
 export const create = async (req: Request, res: Response) => {
-  const task = service.create(req.body);
+  const task = await service.create(req.body);
   res.status(201).json(task);
 };
 
 export const update = async (req: Request<TaskParams>, res: Response) => {
-  const task = service.update(req.params.id, req.body);
+  const task = await service.update(req.params.id, req.body);
   res.json(task);
 };
 
 export const remove = async (req: Request<TaskParams>, res: Response) => {
-  service.remove(req.params.id);
+  await service.remove(req.params.id);
   res.status(204).send();
 };
 
 export const getStats = async (req: Request, res: Response) => {
-  const result = service.getStats();
+  const result = await service.getStats();
   res.json(result);
 };

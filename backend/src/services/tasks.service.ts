@@ -2,11 +2,11 @@ import ApiError from "../infrastructure/apiError";
 import * as store from "../store/tasks.store";
 import { STATUSES, PRIORITIES, Task, CreateTaskDto, UpdateTaskDto, createTaskDto } from "../domain/task.dto";
 import { oneOfEnum, requireString, optionalString } from "../infrastructure/validation";
-import { db } from "../infrastructure/db"; // ← ТИ ЗАБУВ ІМПОРТ
+import { db } from "../infrastructure/db";
 
 
 export const getAll = async (params: { page?: number; limit?: number; status?: string }) => {
-  let result = await store.getAll(); // ← ФІКС
+  let result = await store.getAll();
 
   if (params.status) {
     if (!STATUSES.includes(params.status as any)) {
@@ -32,16 +32,11 @@ export const getAll = async (params: { page?: number; limit?: number; status?: s
   };
 };
 
-export const getById = async (id: string): Promise<Task> => {
-  const task = await store.getById(id); // ← ФІКС
-
-  if (!task) {
-    throw new ApiError(404, "NOT_FOUND", "Task not found");
-  }
-
+export const getById = async (id: string) => {
+  const task = await store.getById(id);
+  if (!task) throw new ApiError(404, "NOT_FOUND", "Task not found");
   return task;
 };
-
 
 export const create = async (data: CreateTaskDto): Promise<Task> => {
   const errors: { field: string; message: string }[] = [];
@@ -73,12 +68,12 @@ export const create = async (data: CreateTaskDto): Promise<Task> => {
 
   const taskDto = createTaskDto(data);
 
-  return await store.add(taskDto); // ← ФІКС
+  return await store.add(taskDto);
 };
 
 
 export const update = async (id: string, data: UpdateTaskDto): Promise<Task> => {
-  const task = await store.getById(id); // ← ФІКС
+  const task = await store.getById(id);
 
   if (!task) {
     throw new ApiError(404, "NOT_FOUND", "Task not found");
@@ -102,7 +97,7 @@ export const update = async (id: string, data: UpdateTaskDto): Promise<Task> => 
 
 
 export const remove = async (id: string): Promise<void> => {
-  const task = await store.getById(id); // ← ФІКС
+  const task = await store.getById(id);
 
   if (!task) {
     throw new ApiError(404, "NOT_FOUND", "Task not found");
@@ -115,10 +110,14 @@ export const remove = async (id: string): Promise<void> => {
 export const getStats = () => {
   return new Promise((resolve, reject) => {
     db.all(
-      `SELECT status, COUNT(*) as count FROM tasks GROUP BY status`,
+      `
+      SELECT status, COUNT(*) as count
+      FROM tasks
+      GROUP BY status
+      `,
       (err, rows) => {
         if (err) reject(err);
-        else resolve(rows as any[]);
+        else resolve(rows);
       }
     );
   });
@@ -128,13 +127,17 @@ export const getStats = () => {
 export const getWithUsers = () => {
   return new Promise((resolve, reject) => {
     db.all(
-      `SELECT t.*, u.name as userName
-       FROM tasks t
-       LEFT JOIN users u ON t.userId = u.id`,
+      `
+      SELECT t.*, u.name as userName
+      FROM tasks t
+      LEFT JOIN users u ON t.userId = u.id
+      `,
       (err, rows) => {
         if (err) reject(err);
-        else resolve(rows as any[]);
+        else resolve(rows);
       }
     );
   });
 };
+
+console.log("SERVICE GET ALL");

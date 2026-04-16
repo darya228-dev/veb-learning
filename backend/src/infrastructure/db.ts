@@ -11,5 +11,5 @@ export const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// ВКЛЮЧИТИ FK
+
 db.run("PRAGMA foreign_keys = ON");

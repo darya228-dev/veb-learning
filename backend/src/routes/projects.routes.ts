@@ -1,29 +1,15 @@
 import { Router, Request, Response } from "express";
+import * as store from "../store/projects.store";
 
 const router = Router();
 
-
-interface Project {
-  id: string;
-  name: string;
-}
-
-
-let projects: Project[] = [];
-
-router.get("/projects", (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
+  const projects = await store.getAll();
   res.json(projects);
 });
 
-
-router.post("/projects", (req: Request, res: Response) => {
-  const project: Project = {
-    id: Date.now().toString(),
-    name: req.body.name,
-  };
-
-  projects.push(project);
-
+router.post("/", async (req: Request, res: Response) => {
+  const project = await store.add(req.body.name);
   res.status(201).json(project);
 });
 
