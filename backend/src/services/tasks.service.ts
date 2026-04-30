@@ -106,14 +106,13 @@ export const remove = async (id: string): Promise<void> => {
   await store.remove(id);
 };
 
-
 export const getStats = () => {
   return new Promise((resolve, reject) => {
     db.all(
       `
-      SELECT status, COUNT(*) as count
+      SELECT status,priority, COUNT(*) as count
       FROM tasks
-      GROUP BY status
+      GROUP BY status, priority
       `,
       (err, rows) => {
         if (err) reject(err);
