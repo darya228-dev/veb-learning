@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS tasks (
   userId TEXT,
   projectId TEXT,
   FOREIGN KEY(userId) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY(projectId) REFERENCES projects(id ON DELETE CASCADE)
+  FOREIGN KEY(projectId) REFERENCES projects(id) ON DELETE CASCADE
 );

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Лабораторна №1 — Варіант №9</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
+    <script src="app.js" type="module" defer></script>
     <link rel="icon" href="Gunbab.jpg" type="image/x-icon" />
 </head>
 
@@ -88,20 +88,21 @@
                         </select>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th data-sort="subject">Предмет</th>
-                            <th data-sort="status">Статус</th>
-                            <th data-sort="priority">Пріоритет</th>
-                            <th data-sort="author">Ім'я клієнта</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itemsTableBody"></tbody>
-                </table>
-
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th data-sort="subject">Предмет</th>
+                                <th data-sort="status">Статус</th>
+                                <th data-sort="priority">Пріоритет</th>
+                                <th data-sort="author">Ім'я клієнта</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody"></tbody>
+                    </table>
+                </div>
             </section>
 
         </div>

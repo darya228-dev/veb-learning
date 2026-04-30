@@ -6,14 +6,10 @@ interface TaskParams {
 }
 
 export const getAll = async (req: Request, res: Response) => {
-  console.log("GET ALL HIT");
-
   const result = await service.getAll({
     page: 1,
     limit: 10,
   });
-
-  console.log("RESULT:", result);
 
   res.json(result);
 };

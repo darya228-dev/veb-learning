@@ -9,6 +9,9 @@ export default function errorMiddleware(
   const status = err.status || 500;
 
   res.status(status).json({
-    error: err.message
+    status,
+    code: err.code || "INTERNAL_ERROR",
+    message: err.message,
+    details: err.details || []
   });
 }

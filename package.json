@@ -1,0 +1,10 @@
+{
+  "name": "fullstack-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:be": "cd backend && npm run dev",
+    "dev:fe": "cd frontend && npx live-server --port=5173",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  }
+}
