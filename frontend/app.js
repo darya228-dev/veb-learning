@@ -1,17 +1,18 @@
-const API_URL = "http://localhost:3000/api/v1/tasks";
+import { apiClient } from "./apiClient.js";
 
 const state = {
     items: [],
+    stats: [],
     editingId: null,
-    filters: {
-        status: "",
-        priority: ""
-    },
-    sort: { field: null, direction: "asc" }
+    loading: false,
+    error: null,
+    pagination: { page: 1, limit: 5, totalPages: 1 }
 };
 
-const form = document.getElementById("createForm");
+
 const tableBody = document.getElementById("itemsTableBody");
+const form = document.getElementById("createForm");
+const statsContainer = document.getElementById("statsContainer");
 
 const subjectInput = document.getElementById("subjectInput");
 const statusSelect = document.getElementById("statusSelect");
@@ -19,175 +20,100 @@ const prioritySelect = document.getElementById("prioritySelect");
 const messageInput = document.getElementById("messageInput");
 const authorInput = document.getElementById("authorInput");
 
-const cancelEditBtn = document.getElementById("cancelEdit");
-const formTitle = document.getElementById("formTitle");
 
-const filterStatus = document.getElementById("filterStatus");
-const filterPriority = document.getElementById("filterPriority");
-const tableHead = document.querySelector("thead");
-
-init();
+document.addEventListener("DOMContentLoaded", init);
 
 function init() {
-    attachHandlers();
-    loadFromServer();
+    bindEvents();
+    loadData();
 }
 
-function attachHandlers() {
+
+function bindEvents() {
     form.addEventListener("submit", onSubmit);
-    tableBody.addEventListener("click", onTableClick);
 
-    filterStatus.addEventListener("change", e => {
-        state.filters.status = e.target.value;
-        render();
-    });
-
-    filterPriority.addEventListener("change", e => {
-        state.filters.priority = e.target.value;
-        render();
-    });
-
-    cancelEditBtn.addEventListener("click", resetForm);
-
-    tableHead.addEventListener("click", e => {
-        const col = e.target.dataset.sort;
-        if (!col) return;
-
-        if (state.sort.field === col) {
-            state.sort.direction = state.sort.direction === "asc" ? "desc" : "asc";
-        } else {
-            state.sort.field = col;
-            state.sort.direction = "asc";
+    document.getElementById("prevPage").onclick = () => {
+        if (state.pagination.page > 1) {
+            state.pagination.page--;
+            loadData();
         }
+    };
 
-        render();
-    });
+    document.getElementById("nextPage").onclick = () => {
+        if (state.pagination.page < state.pagination.totalPages) {
+            state.pagination.page++;
+            loadData();
+        }
+    };
 }
 
-async function loadFromServer() {
-    try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error();
 
-        const res = await response.json();
-        state.items = Array.isArray(res) ? res : (res.data ?? []);
+async function loadData() {
+    setLoading(true);
+
+    try {
+        const res = await apiClient.getList(
+            state.pagination.page,
+            state.pagination.limit
+        );
+
+        state.items = Array.isArray(res)
+            ? res
+            : (res?.data || []);
+
+        state.pagination.totalPages = res?.meta?.totalPages || 1;
+
+        const statsRes = await apiClient.getStats();
+        state.stats = statsRes.data || statsRes || [];
+
+        state.error = null;
         render();
-    } catch {
-        tableBody.innerHTML = "<tr><td>Помилка завантаження</td></tr>";
+
+    } catch (err) {
+        state.error = err.message || "Load error";
+        renderError();
+    } finally {
+        setLoading(false);
     }
 }
+
 
 async function onSubmit(e) {
     e.preventDefault();
 
     const dto = readForm();
+
     if (!validate(dto)) return;
 
     try {
         if (state.editingId) {
-            const response = await fetch(`${API_URL}/${state.editingId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(dto)
-            });
-
-            if (!response.ok) throw new Error();
-
-            const res = await response.json();
-            const updated = res.data ?? res;
-
-            state.items = state.items.map(i =>
-                i.id === state.editingId ? updated : i
-            );
+            await apiClient.update(state.editingId, dto);
         } else {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(dto)
-            });
-
-            if (!response.ok) throw new Error();
-
-            const res = await response.json();
-            const created = res.data ?? res;
-
-            state.items.push(created);
+            await apiClient.create(dto);
         }
 
         resetForm();
-        render();
-    } catch {
-        alert("Помилка при збереженні");
-    }
-}
+        await loadData();
 
-async function onTableClick(e) {
-    const deleteId = e.target.dataset.delete;
-    const editId = e.target.dataset.edit;
+    } catch (err) {
 
-    if (deleteId) {
-        try {
-            const res = await fetch(`${API_URL}/${deleteId}`, {
-                method: "DELETE"
+        if (err.status === 400 && err.errors) {
+
+            Object.entries(err.errors).forEach(([field, message]) => {
+                const input = document.getElementById(field + "Input");
+                const error = document.getElementById(field + "Error");
+
+                if (input) input.classList.add("invalid");
+                if (error) error.textContent = message;
             });
 
-            if (!res.ok) throw new Error();
-
-            state.items = state.items.filter(i => i.id !== deleteId);
-            render();
-        } catch {
-            alert("Помилка видалення");
+            return;
         }
-    }
 
-    if (editId) {
-        startEdit(editId);
+        alert(err.message || "Save error");
     }
 }
 
-function render() {
-    tableBody.innerHTML = "";
-
-    let list = [...state.items];
-
-    if (state.filters.status) {
-        list = list.filter(i => i.status === state.filters.status);
-    }
-
-    if (state.filters.priority) {
-        list = list.filter(i => i.priority === state.filters.priority);
-    }
-
-    if (state.sort.field) {
-        const dir = state.sort.direction === "asc" ? 1 : -1;
-        list.sort((a, b) =>
-            (a[state.sort.field] || "")
-                .toString()
-                .localeCompare((b[state.sort.field] || "").toString()) * dir
-        );
-    }
-
-    if (!list.length) {
-        tableBody.innerHTML = "<tr><td>Немає даних</td></tr>";
-        return;
-    }
-
-    list.forEach((item, index) => {
-        tableBody.innerHTML += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${item.subject ?? ""}</td>
-                <td>${item.status ?? ""}</td>
-                <td>${item.priority ?? ""}</td>
-                <td>${item.author ?? ""}</td>
-                <td>
-                    <button data-edit="${item.id}">Редагувати</button>
-                    <button data-delete="${item.id}">Видалити</button>
-                </td>
-            </tr>
-        `;
-    });
-}
 
 function readForm() {
     return {
@@ -199,9 +125,91 @@ function readForm() {
     };
 }
 
-function startEdit(id) {
-    const item = state.items.find(i => i.id === id);
-    if (!item) return;
+
+function validate(dto) {
+    clearErrors();
+    let ok = true;
+
+    if (!dto.subject) {
+        showError(subjectInput, "subjectError", "Required");
+        ok = false;
+    }
+
+    if (!dto.status) {
+        showError(statusSelect, "statusError", "Select status");
+        ok = false;
+    }
+
+    if (!dto.priority) {
+        showError(prioritySelect, "priorityError", "Select priority");
+        ok = false;
+    }
+
+    if (!dto.message || dto.message.length < 5) {
+        showError(messageInput, "messageError", "Min 5 chars");
+        ok = false;
+    }
+
+    if (!dto.author) {
+        showError(authorInput, "authorError", "Required");
+        ok = false;
+    }
+
+    return ok;
+}
+
+function showError(input, errorId, message) {
+    input.classList.add("invalid");
+    const el = document.getElementById(errorId);
+    if (el) el.textContent = message;
+}
+
+function clearErrors() {
+    document.querySelectorAll(".invalid").forEach(i => i.classList.remove("invalid"));
+    document.querySelectorAll(".error-text").forEach(e => e.textContent = "");
+}
+
+function render() {
+    if (!state.items.length) {
+        tableBody.innerHTML = "<tr><td>No data</td></tr>";
+        return;
+    }
+
+    tableBody.innerHTML = state.items.map((item, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td>${item.subject || ""}</td>
+            <td>${item.status || ""}</td>
+            <td>${item.priority || ""}</td>
+            <td>${item.author || ""}</td>
+            <td>
+                <button onclick="editItem('${item.id}')">Edit</button>
+                <button onclick="deleteItem('${item.id}')">Delete</button>
+            </td>
+        </tr>
+    `).join("");
+
+    statsContainer.innerHTML = (state.stats || []).map(s => `
+        <div>${s.status} / ${s.priority}: ${s.count}</div>
+    `).join("");
+}
+
+
+function setLoading(val) {
+    state.loading = val;
+    if (val) {
+        tableBody.innerHTML = "<tr><td>Loading...</td></tr>";
+    }
+}
+
+
+function renderError() {
+    tableBody.innerHTML = `<tr><td style="color:red">${state.error}</td></tr>`;
+}
+
+
+window.editItem = async function (id) {
+    const item = await apiClient.getById(id);
 
     state.editingId = id;
 
@@ -210,62 +218,21 @@ function startEdit(id) {
     prioritySelect.value = item.priority || "";
     messageInput.value = item.message || "";
     authorInput.value = item.author || "";
+};
 
-    formTitle.textContent = "Редагування";
-    cancelEditBtn.classList.remove("hidden");
+window.deleteItem = async function (id) {
+    if (!confirm("Delete?")) return;
 
-    clearErrors();
-}
+    try {
+        await apiClient.remove(id);
+        await loadData();
+    } catch (err) {
+        alert(err.message);
+    }
+};
+
 
 function resetForm() {
     state.editingId = null;
     form.reset();
-    formTitle.textContent = "Нова заявка";
-    cancelEditBtn.classList.add("hidden");
-    clearErrors();
-}
-
-function validate(dto) {
-    clearErrors();
-    let ok = true;
-
-    if (!dto.subject) {
-        showError("subjectInput", "subjectError", "Обовʼязкове поле");
-        ok = false;
-    }
-
-    if (!dto.status) {
-        showError("statusSelect", "statusError", "Оберіть статус");
-        ok = false;
-    }
-
-    if (!dto.priority) {
-        showError("prioritySelect", "priorityError", "Оберіть пріоритет");
-        ok = false;
-    }
-
-    if (!dto.message || dto.message.length < 5) {
-        showError("messageInput", "messageError", "Мінімум 5 символів");
-        ok = false;
-    }
-
-    if (!dto.author) {
-        showError("authorInput", "authorError", "Вкажіть автора");
-        ok = false;
-    }
-
-    return ok;
-}
-
-function showError(inputId, errorId, message) {
-    const input = document.getElementById(inputId);
-    const error = document.getElementById(errorId);
-
-    if (input) input.classList.add("invalid");
-    if (error) error.textContent = message;
-}
-
-function clearErrors() {
-    document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
-    document.querySelectorAll(".error-text").forEach(el => el.textContent = "");
 }

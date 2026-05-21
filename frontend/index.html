@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Лабораторна №1 — Варіант №9</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js" type="module" defer></script>
+    <script type="module" src="app.js" defer></script>
     <link rel="icon" href="Gunbab.jpg" type="image/x-icon" />
 </head>
 
@@ -102,6 +102,18 @@
                         </thead>
                         <tbody id="itemsTableBody"></tbody>
                     </table>
+                    <div class="pagination">
+                        <button id="prevPage">← Назад</button>
+
+                        <span id="pageInfo"></span>
+
+                        <button id="nextPage">Вперед →</button>
+                    </div>
+                </div>
+                <div class="stats-box">
+                    <h3>Статистика заявок в тех.підтримку</h3>
+
+                    <div id="statsContainer"></div>
                 </div>
             </section>
 

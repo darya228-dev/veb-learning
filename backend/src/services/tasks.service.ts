@@ -4,31 +4,39 @@ import { STATUSES, PRIORITIES, Task, CreateTaskDto, UpdateTaskDto, createTaskDto
 import { oneOfEnum, requireString, optionalString } from "../infrastructure/validation";
 import { db } from "../infrastructure/db";
 
+export const getAll = async (
+  params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }
+) => {
+  const page = params.page && params.page > 0
+    ? params.page
+    : 1;
 
-export const getAll = async (params: { page?: number; limit?: number; status?: string }) => {
-  let result = await store.getAll();
+  const limit = params.limit && params.limit > 0
+    ? params.limit
+    : 5;
 
   if (params.status) {
-    if (!STATUSES.includes(params.status as any)) {
-      throw new ApiError(400, "VALIDATION_ERROR", `Invalid status: ${params.status}`);
-    }
-    result = result.filter(t => t.status === params.status);
+    oneOfEnum(params.status, STATUSES, "status");
   }
 
-  const page = params.page && params.page > 0 ? params.page : 1;
-  const limit = params.limit && params.limit > 0 ? params.limit : 10;
-
-  const start = (page - 1) * limit;
-  const paginated = result.slice(start, start + limit);
+  const result = await store.getPaginated(
+    page,
+    limit,
+    params.status
+  );
 
   return {
-    data: paginated,
+    data: result.items,
     meta: {
-      total: result.length,
+      total: result.total,
       page,
       limit,
-      totalPages: Math.ceil(result.length / limit),
-    },
+      totalPages: Math.ceil(result.total / limit)
+    }
   };
 };
 

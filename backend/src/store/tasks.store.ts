@@ -87,6 +87,57 @@ export const update = (id: string, data: UpdateTaskDto): Promise<Task | null> =>
   });
 };
 
+
+export const getPaginated = (
+  page: number,
+  limit: number,
+  status?: string
+): Promise<{ items: Task[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    const offset = (page - 1) * limit;
+
+    let where = "";
+    let params: any[] = [];
+
+    if (status) {
+      where = "WHERE status = ?";
+      params.push(status);
+    }
+
+    db.all(
+      `
+      SELECT * FROM tasks
+      ${where}
+      LIMIT ?
+      OFFSET ?
+      `,
+      [...params, limit, offset],
+      (err, rows) => {
+        if (err) return reject(err);
+
+        db.get(
+          `
+          SELECT COUNT(*) as total
+          FROM tasks
+          ${where}
+          `,
+          params,
+          (err2, countRow: any) => {
+            if (err2) return reject(err2);
+
+            resolve({
+              items: rows as Task[],
+              total: countRow.total
+            });
+          }
+        );
+      }
+    );
+  });
+};
+
+
+
 export const getFiltered = (status: string, limit: number): Promise<Task[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -101,4 +152,5 @@ export const getFiltered = (status: string, limit: number): Promise<Task[]> => {
       }
     );
   });
+
 };

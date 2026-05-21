@@ -1,11 +1,11 @@
-const API_URL = "http://localhost:3000/api/v1/tasks";
+import { API_CONFIG } from "./config.js";
 
-async function request(url, options = {}, timeout = 10000) {
+async function request(url, options = {}, retries = 2) {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
+    const timeout = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
     try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
             ...options,
             signal: controller.signal,
             headers: {
@@ -14,40 +14,67 @@ async function request(url, options = {}, timeout = 10000) {
             }
         });
 
-        const data = await response.json().catch(() => null);
+        const data = await res.json().catch(() => null);
 
-        if (!response.ok) {
-            throw {
-                status: response.status,
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+
+            const error = {
+                status: res.status,
                 message: data?.message || "Request error",
-                details: data?.details || []
+                errors: data?.errors || null
             };
+
+
+            if (retries > 0 && (res.status === 429 || res.status === 503)) {
+                return request(url, options, retries - 1);
+            }
+
+            throw error;
         }
 
-        return data;
-    } finally {
-        clearTimeout(id);
+        return {
+            data: data?.data ?? data,
+            meta: data?.meta ?? null
+        };
+
+    } catch (err) {
+        clearTimeout(timeout);
+
+        if (err.name === "AbortError") {
+            throw { message: "Timeout error" };
+        }
+
+        throw err;
     }
 }
 
+
 export const apiClient = {
-    getAll: () => request(API_URL),
-    getById: (id) => request(`${API_URL}/${id}`),
+    getList: (page, limit) =>
+        request(`${API_CONFIG.BASE_URL}?page=${page}&limit=${limit}`),
+
+    getById: (id) =>
+        request(`${API_CONFIG.BASE_URL}/${id}`),
 
     create: (dto) =>
-        request(API_URL, {
+        request(API_CONFIG.BASE_URL, {
             method: "POST",
             body: JSON.stringify(dto)
         }),
 
     update: (id, dto) =>
-        request(`${API_URL}/${id}`, {
+        request(`${API_CONFIG.BASE_URL}/${id}`, {
             method: "PUT",
             body: JSON.stringify(dto)
         }),
 
     remove: (id) =>
-        request(`${API_URL}/${id}`, {
+        request(`${API_CONFIG.BASE_URL}/${id}`, {
             method: "DELETE"
-        })
+        }),
+
+    getStats: () =>
+        request(`${API_CONFIG.BASE_URL}/stats`)
 };

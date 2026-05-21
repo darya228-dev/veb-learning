@@ -6,9 +6,14 @@ interface TaskParams {
 }
 
 export const getAll = async (req: Request, res: Response) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 5;
+  const status = req.query.status as string | undefined;
+
   const result = await service.getAll({
-    page: 1,
-    limit: 10,
+    page,
+    limit,
+    status,
   });
 
   res.json(result);
