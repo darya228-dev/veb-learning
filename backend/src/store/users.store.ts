@@ -36,7 +36,22 @@ export const add = (name: string): Promise<User> => {
         );
     });
 };
-
+export const getClientStats = (): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `
+            SELECT u.name as client, COUNT(t.id) as count
+            FROM users u
+            LEFT JOIN tasks t ON t.userId = u.id
+            GROUP BY u.id
+            `,
+            (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows as any[]);
+            }
+        );
+    });
+};
 export const remove = (id: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         db.run(`DELETE FROM users WHERE id='${id}'`, (err) => {

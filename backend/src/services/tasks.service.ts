@@ -118,13 +118,36 @@ export const getStats = () => {
   return new Promise((resolve, reject) => {
     db.all(
       `
-      SELECT status,priority, COUNT(*) as count
+      SELECT 
+        status,
+        COALESCE(priority, 'Undefined') as priority,
+        COUNT(*) as count
       FROM tasks
       GROUP BY status, priority
+      ORDER BY status, priority
+      `,
+      (err, rows: any[]) => {
+        if (err) return reject(err);
+
+        resolve({
+          data: rows
+        });
+      }
+    );
+  });
+};
+
+export const getUserRoleStats = (): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `
+      SELECT role, COUNT(*) as count
+      FROM users
+      GROUP BY role
       `,
       (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
+        if (err) return reject(err);
+        resolve(rows as any[]);
       }
     );
   });

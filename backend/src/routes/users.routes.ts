@@ -12,10 +12,17 @@ router.get("/", async (req: Request, res: Response) => {
     res.json(users);
 });
 
+router.get("/client-stats", async (req, res) => {
+    const stats = await store.getClientStats();
+    res.json(stats);
+});
+
 router.get("/:id", async (req: Request<IdParams>, res: Response) => {
     const user = await store.getById(req.params.id);
 
-    if (!user) return res.status(404).json({ error: "Not found" });
+    if (!user) {
+        return res.status(404).json({ error: "Not found" });
+    }
 
     res.json(user);
 });

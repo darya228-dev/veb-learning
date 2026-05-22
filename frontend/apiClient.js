@@ -19,13 +19,11 @@ async function request(url, options = {}, retries = 2) {
         clearTimeout(timeout);
 
         if (!res.ok) {
-
             const error = {
                 status: res.status,
                 message: data?.message || "Request error",
                 errors: data?.errors || null
             };
-
 
             if (retries > 0 && (res.status === 429 || res.status === 503)) {
                 return request(url, options, retries - 1);
@@ -49,8 +47,6 @@ async function request(url, options = {}, retries = 2) {
         throw err;
     }
 }
-
-
 export const apiClient = {
     getList: (page, limit) =>
         request(`${API_CONFIG.BASE_URL}?page=${page}&limit=${limit}`),
@@ -76,5 +72,8 @@ export const apiClient = {
         }),
 
     getStats: () =>
-        request(`${API_CONFIG.BASE_URL}/stats`)
+        request(`${API_CONFIG.BASE_URL}/stats`),
+
+    getClientStats: () =>
+        request("http://localhost:3000/api/v1/users/client-stats")
 };
