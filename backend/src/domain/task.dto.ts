@@ -11,7 +11,13 @@ export interface Task {
   priority?: Priority;
   message?: string;
   author?: string;
+  userId?: string;
+  projectId?: string;
 }
+
+export type CreateTaskDto = Omit<Task, "id">;
+export type UpdateTaskDto = Omit<Task, "id">;
+
 export function createTaskDto(data: CreateTaskDto): CreateTaskDto {
   return {
     subject: data.subject,
@@ -19,7 +25,7 @@ export function createTaskDto(data: CreateTaskDto): CreateTaskDto {
     priority: data.priority,
     message: data.message,
     author: data.author,
+    userId: data.userId,
+    projectId: data.projectId
   };
 }
-export type CreateTaskDto = Omit<Task, "id">;
-export type UpdateTaskDto = Omit<Task, "id">;

@@ -12,7 +12,7 @@ export const getAll = (): Promise<Task[]> => {
 
 export const getById = (id: string): Promise<Task | undefined> => {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM tasks WHERE id = ?`, [id], (err, row) => {
+    db.get("SELECT * FROM tasks WHERE id = ?", [id], (err, row) => {
       if (err) reject(err);
       else resolve(row as Task);
     });
@@ -25,9 +25,9 @@ export const add = (task: CreateTaskDto): Promise<Task> => {
   return new Promise((resolve, reject) => {
     db.run(
       `
-      INSERT INTO tasks (id, subject, status, priority, message, author)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `,
+      INSERT INTO tasks (id, subject, status, priority, message, author, userId, projectId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       [
         id,
         task.subject,
@@ -35,6 +35,8 @@ export const add = (task: CreateTaskDto): Promise<Task> => {
         task.priority ?? null,
         task.message ?? null,
         task.author ?? null,
+        task.userId ?? null,
+        task.projectId ?? null
       ],
       (err) => {
         if (err) reject(err);
@@ -46,7 +48,7 @@ export const add = (task: CreateTaskDto): Promise<Task> => {
 
 export const remove = (id: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    db.run(`DELETE FROM tasks WHERE id = ?`, [id], (err) => {
+    db.run("DELETE FROM tasks WHERE id = ?", [id], (err) => {
       if (err) reject(err);
       else resolve();
     });
@@ -78,7 +80,7 @@ export const update = (id: string, data: UpdateTaskDto): Promise<Task | null> =>
 
         if (this.changes === 0) return resolve(null);
 
-        db.get(`SELECT * FROM tasks WHERE id = ?`, [id], (err, row) => {
+        db.get("SELECT * FROM tasks WHERE id = ?", [id], (err, row) => {
           if (err) return reject(err);
           resolve(row as Task);
         });
@@ -87,22 +89,30 @@ export const update = (id: string, data: UpdateTaskDto): Promise<Task | null> =>
   });
 };
 
-
 export const getPaginated = (
   page: number,
   limit: number,
-  status?: string
+  status?: string,
+  currentUserId?: string,
+  currentUserRole?: string
 ): Promise<{ items: Task[]; total: number }> => {
   return new Promise((resolve, reject) => {
     const offset = (page - 1) * limit;
 
-    let where = "";
-    let params: any[] = [];
+    const whereParts: string[] = [];
+    const params: any[] = [];
 
     if (status) {
-      where = "WHERE status = ?";
+      whereParts.push("status = ?");
       params.push(status);
     }
+
+    if (currentUserRole !== "admin" && currentUserId) {
+      whereParts.push("userId = ?");
+      params.push(currentUserId);
+    }
+
+    const where = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
 
     db.all(
       `
@@ -136,15 +146,15 @@ export const getPaginated = (
   });
 };
 
-
-
 export const getFiltered = (status: string, limit: number): Promise<Task[]> => {
   return new Promise((resolve, reject) => {
     db.all(
-      `SELECT * FROM tasks 
-       WHERE status = ? 
-       ORDER BY subject 
-       LIMIT ?`,
+      `
+      SELECT * FROM tasks 
+      WHERE status = ? 
+      ORDER BY subject 
+      LIMIT ?
+      `,
       [status, limit],
       (err, rows) => {
         if (err) reject(err);
@@ -152,5 +162,4 @@ export const getFiltered = (status: string, limit: number): Promise<Task[]> => {
       }
     );
   });
-
 };

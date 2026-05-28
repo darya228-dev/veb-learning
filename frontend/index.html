@@ -66,7 +66,19 @@
             </form>
 
             <section>
+
                 <h2>Список заявок</h2>
+                <div class="field">
+                    <label for="demoUserSelect">Поточний користувач</label>
+                    <select id="demoUserSelect">
+                        <option value="1">Admin / User 1</option>
+                        <option value="2">John / User 2</option>
+                        <option value="3">Anna / User 3</option>
+                        <option value="4">Maria / User 4</option>
+                        <option value="5">Oleh / User 5</option>
+                    </select>
+                </div>
+
                 <div class="filters">
                     <div class="field">
                         <label for="filterStatus">Фільтр за статусом</label>
@@ -92,7 +104,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th data-sort="index">#</th>
                                 <th data-sort="subject">Предмет</th>
                                 <th data-sort="status">Статус</th>
                                 <th data-sort="priority">Пріоритет</th>
@@ -116,8 +128,8 @@
                     <table class="stats-table">
                         <thead>
                             <tr>
-                                <th>Role</th>
-                                <th>Count</th>
+                                <th data-user-sort="client">Користувач</th>
+                                <th data-user-sort="count">Count</th>
                             </tr>
                         </thead>
 
@@ -130,9 +142,9 @@
                     <table class="stats-table">
                         <thead>
                             <tr>
-                                <th>Status</th>
-                                <th>Priority</th>
-                                <th>Count</th>
+                                <th data-stats-sort="status">Status</th>
+                                <th data-stats-sort="priority">Priority</th>
+                                <th data-stats-sort="count">Count</th>
                             </tr>
                         </thead>
 
@@ -141,6 +153,23 @@
                 </div>
             </section>
 
+        </div>
+    </div>
+    <div id="detailsModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Опис заявки</h2>
+
+            <p><strong>Предмет:</strong> <span id="detailsSubject"></span></p>
+            <p><strong>Статус:</strong> <span id="detailsStatus"></span></p>
+            <p><strong>Пріоритет:</strong> <span id="detailsPriority"></span></p>
+            <p><strong>Автор:</strong> <span id="detailsAuthor"></span></p>
+
+            <div class="description-box">
+                <strong>Опис:</strong>
+                <p id="detailsMessage"></p>
+            </div>
+
+            <button type="button" id="closeDetailsModal">Закрити</button>
         </div>
     </div>
 

@@ -2,16 +2,28 @@ import { apiClient } from "./apiClient.js";
 
 const state = {
     items: [],
+    stats: [],
     clientStats: [],
     editingId: null,
     loading: false,
     error: null,
-    pagination: { page: 1, limit: 5, totalPages: 1 }
+    pagination: { page: 1, limit: 5, totalPages: 1 },
+    sort: { field: null, direction: "asc" },
+    statsSort: { field: null, direction: "asc" },
+    clientStatsSort: { field: null, direction: "asc" }
 };
-
 
 const tableBody = document.getElementById("itemsTableBody");
 const form = document.getElementById("createForm");
+const demoUserSelect = document.getElementById("demoUserSelect");
+const detailsModal = document.getElementById("detailsModal");
+const closeDetailsModal = document.getElementById("closeDetailsModal");
+
+const detailsSubject = document.getElementById("detailsSubject");
+const detailsStatus = document.getElementById("detailsStatus");
+const detailsPriority = document.getElementById("detailsPriority");
+const detailsAuthor = document.getElementById("detailsAuthor");
+const detailsMessage = document.getElementById("detailsMessage");
 
 const subjectInput = document.getElementById("subjectInput");
 const statusSelect = document.getElementById("statusSelect");
@@ -22,12 +34,84 @@ const authorInput = document.getElementById("authorInput");
 window.addEventListener("DOMContentLoaded", init);
 
 function init() {
+    const savedUserId = localStorage.getItem("demoUserId") || "1";
+
+    if (demoUserSelect) {
+        demoUserSelect.value = savedUserId;
+    }
+
     bindEvents();
     loadData();
 }
 
 function bindEvents() {
     form.addEventListener("submit", onSubmit);
+
+    if (demoUserSelect) {
+        demoUserSelect.addEventListener("change", () => {
+            localStorage.setItem("demoUserId", demoUserSelect.value);
+            state.pagination.page = 1;
+            loadData();
+        });
+    }
+
+    document.querySelectorAll("[data-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+            const field = th.dataset.sort;
+
+            if (state.sort.field === field) {
+                state.sort.direction = state.sort.direction === "asc" ? "desc" : "asc";
+            } else {
+                state.sort.field = field;
+                state.sort.direction = "asc";
+            }
+
+            renderTable();
+        });
+    });
+
+    document.querySelectorAll("[data-stats-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+            const field = th.dataset.statsSort;
+
+            if (state.statsSort.field === field) {
+                state.statsSort.direction = state.statsSort.direction === "asc" ? "desc" : "asc";
+            } else {
+                state.statsSort.field = field;
+                state.statsSort.direction = "asc";
+            }
+
+            renderStats();
+        });
+    });
+
+    document.querySelectorAll("[data-user-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+            const field = th.dataset.userSort;
+
+            if (state.clientStatsSort.field === field) {
+                state.clientStatsSort.direction = state.clientStatsSort.direction === "asc" ? "desc" : "asc";
+            } else {
+                state.clientStatsSort.field = field;
+                state.clientStatsSort.direction = "asc";
+            }
+
+            renderClientStats();
+        });
+    });
+    if (closeDetailsModal) {
+        closeDetailsModal.addEventListener("click", () => {
+            detailsModal.classList.add("hidden");
+        });
+    }
+
+    if (detailsModal) {
+        detailsModal.addEventListener("click", (e) => {
+            if (e.target === detailsModal) {
+                detailsModal.classList.add("hidden");
+            }
+        });
+    }
 
     document.getElementById("prevPage").onclick = () => {
         if (state.pagination.page > 1) {
@@ -187,56 +271,169 @@ function render() {
     renderClientStats();
 }
 
+
+function sortArray(data, sortConfig) {
+    if (!sortConfig.field) return [...data];
+
+    return [...data].sort((a, b) => {
+        let aValue;
+        let bValue;
+
+        if (sortConfig.field === "index") {
+            aValue = state.items.indexOf(a) + 1;
+            bValue = state.items.indexOf(b) + 1;
+        } else {
+            aValue = a[sortConfig.field];
+            bValue = b[sortConfig.field];
+        }
+
+        if (aValue === undefined || aValue === null) aValue = "";
+        if (bValue === undefined || bValue === null) bValue = "";
+
+        if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
+            aValue = Number(aValue);
+            bValue = Number(bValue);
+        } else {
+            aValue = String(aValue).toLowerCase();
+            bValue = String(bValue).toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+    });
+}
+
+
 function renderTable() {
-    if (!state.items.length) {
-        tableBody.innerHTML = "<tr><td>No data</td></tr>";
+    tableBody.replaceChildren();
+
+    const sortedItems = sortArray(state.items, state.sort);
+
+    if (!sortedItems.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.textContent = "No data";
+        tr.appendChild(td);
+        tableBody.appendChild(tr);
         return;
     }
 
-    tableBody.innerHTML = state.items.map((item, i) => `
-        <tr>
-            <td>${i + 1}</td>
-            <td>${item.subject || ""}</td>
-            <td>${item.status || ""}</td>
-            <td>${item.priority || ""}</td>
-            <td>${item.author || ""}</td>
-            <td>
-                <button onclick="editItem('${item.id}')">Edit</button>
-                <button onclick="deleteItem('${item.id}')">Delete</button>
-            </td>
-        </tr>
-    `).join("");
+    sortedItems.forEach((item, i) => {
+        const tr = document.createElement("tr");
+
+        const values = [
+            i + 1,
+            item.subject || "",
+            item.status || "",
+            item.priority || "",
+            item.author || ""
+        ];
+
+        values.forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+
+        const actionsTd = document.createElement("td");
+
+        const detailsBtn = document.createElement("button");
+        detailsBtn.textContent = "Опис";
+        detailsBtn.onclick = () => showDetails(item.id);
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.onclick = () => editItem(item.id);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = () => deleteItem(item.id);
+
+        actionsTd.appendChild(detailsBtn);
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(deleteBtn);
+
+        tr.appendChild(actionsTd);
+        tableBody.appendChild(tr);
+    });
 }
 
 function renderStats() {
     const tbody = document.getElementById("statsTableBody");
     if (!tbody) return;
 
-    const stats = state.stats;
+    tbody.replaceChildren();
 
-    tbody.innerHTML = stats.length
-        ? stats.map(s => `
-            <tr>
-                <td>${s.status ?? "-"}</td>
-                <td>${s.priority ?? "-"}</td>
-                <td>${s.count ?? 0}</td>
-            </tr>
-        `).join("")
-        : `<tr><td colspan="3">No data</td></tr>`;
+    const stats = sortArray(state.stats || [], state.statsSort);
+
+    if (!stats.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+
+        td.colSpan = 3;
+        td.textContent = "No data";
+
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    stats.forEach(s => {
+        const tr = document.createElement("tr");
+
+        const values = [
+            s.status ?? "-",
+            s.priority ?? "-",
+            s.count ?? 0
+        ];
+
+        values.forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
 }
 
 function renderClientStats() {
     const tbody = document.getElementById("userRoleStatsTableBody");
     if (!tbody) return;
 
-    tbody.innerHTML = state.clientStats.length
-        ? state.clientStats.map(r => `
-            <tr>
-                <td>${r.client ?? "-"}</td>
-                <td>${r.count ?? 0}</td>
-            </tr>
-        `).join("")
-        : `<tr><td colspan="2">No data</td></tr>`;
+    tbody.replaceChildren();
+
+    const clientStats = sortArray(state.clientStats || [], state.clientStatsSort);
+
+    if (!clientStats.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+
+        td.colSpan = 2;
+        td.textContent = "No data";
+
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    clientStats.forEach(r => {
+        const tr = document.createElement("tr");
+
+        const values = [
+            r.client ?? "-",
+            r.count ?? 0
+        ];
+
+        values.forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
 }
 
 function setLoading(val) {
@@ -248,12 +445,39 @@ function setLoading(val) {
 }
 
 function renderError() {
-    tableBody.innerHTML = `<tr><td style="color:red">${state.error}</td></tr>`;
+    tableBody.replaceChildren();
+
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+
+    td.style.color = "red";
+    td.textContent = state.error || "Error";
+
+    tr.appendChild(td);
+    tableBody.appendChild(tr);
+}
+
+async function showDetails(id) {
+    try {
+        const res = await apiClient.getById(id);
+        const item = res.data || res;
+
+        detailsSubject.textContent = item.subject || "-";
+        detailsStatus.textContent = item.status || "-";
+        detailsPriority.textContent = item.priority || "-";
+        detailsAuthor.textContent = item.author || "-";
+        detailsMessage.textContent = item.message || "Опис не вказано";
+
+        detailsModal.classList.remove("hidden");
+    } catch (err) {
+        alert(err.message || "Не вдалося завантажити опис");
+    }
 }
 
 
 window.editItem = async function (id) {
-    const item = await apiClient.getById(id);
+    const res = await apiClient.getById(id);
+    const item = res.data || res;
 
     state.editingId = id;
 

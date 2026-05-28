@@ -10,6 +10,7 @@ async function request(url, options = {}, retries = 2) {
             signal: controller.signal,
             headers: {
                 "Content-Type": "application/json",
+                "X-Demo-UserId": localStorage.getItem("demoUserId") || "1",
                 ...(options.headers || {})
             }
         });
@@ -22,7 +23,8 @@ async function request(url, options = {}, retries = 2) {
             const error = {
                 status: res.status,
                 message: data?.message || "Request error",
-                errors: data?.errors || null
+                errors: data?.errors || data?.details || null,
+                code: data?.code || null
             };
 
             if (retries > 0 && (res.status === 429 || res.status === 503)) {
@@ -47,6 +49,7 @@ async function request(url, options = {}, retries = 2) {
         throw err;
     }
 }
+
 export const apiClient = {
     getList: (page, limit) =>
         request(`${API_CONFIG.BASE_URL}?page=${page}&limit=${limit}`),

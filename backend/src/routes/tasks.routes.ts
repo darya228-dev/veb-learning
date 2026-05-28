@@ -1,5 +1,6 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import wrap from "../infrastructure/wrap";
+import currentUser from "../middleware/currentUser";
 import {
     getAll,
     getById,
@@ -8,24 +9,21 @@ import {
     remove,
     getStats
 } from "../controllers/tasks.controller";
-import * as service from "../services/tasks.service";
 import * as tasksService from "../services/tasks.service";
+
 const router = Router();
 
-router.get("/stats", async (req, res, next) => {
-    try {
-        const stats = await tasksService.getStats();
-        res.json(stats);
-    }
-    catch (e) {
-        next(e);
-    }
-});
-router.get("/with-users", wrap(service.getWithUsers));
-router.get("/", wrap(getAll));
-router.post("/", wrap(create));
-router.get("/:id", wrap(getById));
-router.put("/:id", wrap(update));
-router.delete("/:id", wrap(remove));
+router.get("/stats", currentUser, wrap(getStats));
+
+router.get("/with-users", currentUser, wrap(async (req: Request, res: Response) => {
+    const data = await tasksService.getWithUsers();
+    res.json(data);
+}));
+
+router.get("/", currentUser, wrap(getAll));
+router.post("/", currentUser, wrap(create));
+router.get("/:id", currentUser, wrap(getById));
+router.put("/:id", currentUser, wrap(update));
+router.delete("/:id", currentUser, wrap(remove));
 
 export default router;

@@ -11,7 +11,7 @@ export default function errorMiddleware(
   res.status(status).json({
     status,
     code: err.code || "INTERNAL_ERROR",
-    message: err.message,
+    message: status === 500 ? "Internal server error" : err.message,
     details: err.details || []
   });
 }

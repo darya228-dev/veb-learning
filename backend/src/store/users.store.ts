@@ -3,6 +3,7 @@ import { db } from "../infrastructure/db";
 export interface User {
     id: string;
     name: string;
+    role?: string;
 }
 
 export const getAll = (): Promise<User[]> => {
@@ -16,7 +17,7 @@ export const getAll = (): Promise<User[]> => {
 
 export const getById = (id: string): Promise<User | undefined> => {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT * FROM users WHERE id='${id}'`, (err, row) => {
+        db.get("SELECT * FROM users WHERE id = ?", [id], (err, row) => {
             if (err) reject(err);
             else resolve(row as User);
         });
@@ -28,7 +29,8 @@ export const add = (name: string): Promise<User> => {
 
     return new Promise((resolve, reject) => {
         db.run(
-            `INSERT INTO users (id, name) VALUES ('${id}', '${name}')`,
+            "INSERT INTO users (id, name) VALUES (?, ?)",
+            [id, name],
             (err) => {
                 if (err) reject(err);
                 else resolve({ id, name });
@@ -36,15 +38,27 @@ export const add = (name: string): Promise<User> => {
         );
     });
 };
-export const getClientStats = (): Promise<any[]> => {
+
+export const getClientStats = (
+    currentUserId?: string,
+    currentUserRole?: string
+): Promise<any[]> => {
     return new Promise((resolve, reject) => {
+        const where = currentUserRole === "admin" ? "" : "WHERE u.id = ?";
+        const params = currentUserRole === "admin" ? [] : [currentUserId];
+
         db.all(
             `
-            SELECT u.name as client, COUNT(t.id) as count
-            FROM users u
-            LEFT JOIN tasks t ON t.userId = u.id
-            GROUP BY u.id
-            `,
+      SELECT 
+        u.name as client,
+        COUNT(t.id) as count
+      FROM users u
+      LEFT JOIN tasks t ON t.userId = u.id
+      ${where}
+      GROUP BY u.id, u.name
+      ORDER BY u.name
+      `,
+            params,
             (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows as any[]);
@@ -54,7 +68,7 @@ export const getClientStats = (): Promise<any[]> => {
 };
 export const remove = (id: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        db.run(`DELETE FROM users WHERE id='${id}'`, (err) => {
+        db.run("DELETE FROM users WHERE id = ?", [id], (err) => {
             if (err) reject(err);
             else resolve();
         });

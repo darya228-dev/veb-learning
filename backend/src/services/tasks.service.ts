@@ -4,20 +4,25 @@ import { STATUSES, PRIORITIES, Task, CreateTaskDto, UpdateTaskDto, createTaskDto
 import { oneOfEnum, requireString, optionalString } from "../infrastructure/validation";
 import { db } from "../infrastructure/db";
 
+function checkOwnerOrAdmin(task: Task, currentUserId: string, currentUserRole?: string) {
+  if (currentUserRole === "admin") return;
+
+  if (task.userId !== currentUserId) {
+    throw new ApiError(403, "FORBIDDEN", "You do not have access to this task");
+  }
+}
+
 export const getAll = async (
   params: {
     page?: number;
     limit?: number;
     status?: string;
-  }
+  },
+  currentUserId?: string,
+  currentUserRole?: string
 ) => {
-  const page = params.page && params.page > 0
-    ? params.page
-    : 1;
-
-  const limit = params.limit && params.limit > 0
-    ? params.limit
-    : 5;
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const limit = params.limit && params.limit > 0 ? params.limit : 5;
 
   if (params.status) {
     oneOfEnum(params.status, STATUSES, "status");
@@ -26,7 +31,9 @@ export const getAll = async (
   const result = await store.getPaginated(
     page,
     limit,
-    params.status
+    params.status,
+    currentUserId,
+    currentUserRole
   );
 
   return {
@@ -40,13 +47,23 @@ export const getAll = async (
   };
 };
 
-export const getById = async (id: string) => {
+export const getById = async (
+  id: string,
+  currentUserId: string,
+  currentUserRole?: string
+) => {
   const task = await store.getById(id);
-  if (!task) throw new ApiError(404, "NOT_FOUND", "Task not found");
+
+  if (!task) {
+    throw new ApiError(404, "NOT_FOUND", "Task not found");
+  }
+
+  checkOwnerOrAdmin(task, currentUserId, currentUserRole);
+
   return task;
 };
 
-export const create = async (data: CreateTaskDto): Promise<Task> => {
+export const create = async (data: CreateTaskDto, currentUserId: string): Promise<Task> => {
   const errors: { field: string; message: string }[] = [];
 
   try {
@@ -74,22 +91,34 @@ export const create = async (data: CreateTaskDto): Promise<Task> => {
   optionalString(data.message, "message");
   optionalString(data.author, "author");
 
-  const taskDto = createTaskDto(data);
+  const taskDto = createTaskDto({
+    ...data,
+    userId: currentUserId
+  });
 
   return await store.add(taskDto);
 };
 
-
-export const update = async (id: string, data: UpdateTaskDto): Promise<Task> => {
+export const update = async (
+  id: string,
+  data: UpdateTaskDto,
+  currentUserId: string,
+  currentUserRole?: string
+): Promise<Task> => {
   const task = await store.getById(id);
 
   if (!task) {
     throw new ApiError(404, "NOT_FOUND", "Task not found");
   }
 
+  checkOwnerOrAdmin(task, currentUserId, currentUserRole);
+
   requireString(data.subject, "subject");
   oneOfEnum(data.status, STATUSES, "status");
-  if (data.priority) oneOfEnum(data.priority, PRIORITIES, "priority");
+
+  if (data.priority) {
+    oneOfEnum(data.priority, PRIORITIES, "priority");
+  }
 
   optionalString(data.message, "message");
   optionalString(data.author, "author");
@@ -103,19 +132,30 @@ export const update = async (id: string, data: UpdateTaskDto): Promise<Task> => 
   return updatedTask;
 };
 
-
-export const remove = async (id: string): Promise<void> => {
+export const remove = async (
+  id: string,
+  currentUserId: string,
+  currentUserRole?: string
+): Promise<void> => {
   const task = await store.getById(id);
 
   if (!task) {
     throw new ApiError(404, "NOT_FOUND", "Task not found");
   }
 
+  checkOwnerOrAdmin(task, currentUserId, currentUserRole);
+
   await store.remove(id);
 };
 
-export const getStats = () => {
+export const getStats = (
+  currentUserId: string,
+  currentUserRole?: string
+) => {
   return new Promise((resolve, reject) => {
+    const where = currentUserRole === "admin" ? "" : "WHERE userId = ?";
+    const params = currentUserRole === "admin" ? [] : [currentUserId];
+
     db.all(
       `
       SELECT 
@@ -123,9 +163,11 @@ export const getStats = () => {
         COALESCE(priority, 'Undefined') as priority,
         COUNT(*) as count
       FROM tasks
+      ${where}
       GROUP BY status, priority
       ORDER BY status, priority
       `,
+      params,
       (err, rows: any[]) => {
         if (err) return reject(err);
 
@@ -153,7 +195,6 @@ export const getUserRoleStats = (): Promise<any[]> => {
   });
 };
 
-
 export const getWithUsers = () => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -169,5 +210,3 @@ export const getWithUsers = () => {
     );
   });
 };
-
-console.log("SERVICE GET ALL");
